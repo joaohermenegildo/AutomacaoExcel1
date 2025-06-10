@@ -1,0 +1,75 @@
+Sub ConverterCSVParaXLSX_ComIgnorarVazios()
+    Dim dialogoArquivos As FileDialog
+    Dim dialogoPastaDestino As FileDialog
+    Dim arquivo As Variant
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim ultimaLinha As Long
+    Dim pastaDestino As String
+    Dim nomeArquivoSemExtensao As String
+    Dim novoCaminho As String
+    Dim arquivosConvertidos As Long
+    Dim arquivosIgnorados As Long
+    
+    arquivosConvertidos = 0
+    arquivosIgnorados = 0
+
+    ' Seleciona a pasta destino
+    Set dialogoPastaDestino = Application.FileDialog(msoFileDialogFolderPicker)
+    With dialogoPastaDestino
+        .Title = "Selecione a pasta para salvar os arquivos convertidos"
+        If .Show <> -1 Then Exit Sub
+        pastaDestino = .SelectedItems(1)
+    End With
+
+    ' Seleciona arquivos CSV
+    Set dialogoArquivos = Application.FileDialog(msoFileDialogFilePicker)
+    With dialogoArquivos
+        .Title = "Selecione os arquivos CSV"
+        .Filters.Clear
+        .Filters.Add "Arquivos CSV", "*.csv"
+        .AllowMultiSelect = True
+        If .Show <> -1 Then Exit Sub
+    End With
+
+    ' Percorre cada arquivo selecionado
+    For Each arquivo In dialogoArquivos.SelectedItems
+        Set wb = Workbooks.Open(arquivo)
+        Set ws = wb.Sheets(1)
+        
+        ultimaLinha = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+        
+        ' Verifica se arquivo está vazio
+        If ultimaLinha < 1 Then
+            wb.Close SaveChanges:=False
+            arquivosIgnorados = arquivosIgnorados + 1
+            GoTo ProximoArquivo
+        End If
+        
+        ' Aplica texto para colunas, delimitador vírgula
+        ws.Range("A1:A" & ultimaLinha).TextToColumns _
+            Destination:=ws.Range("A1"), _
+            DataType:=xlDelimited, _
+            TextQualifier:=xlDoubleQuote, _
+            ConsecutiveDelimiter:=False, _
+            Other:=True, _
+            otherChar:=","
+        
+        ' Define caminho e nome do novo arquivo .xlsx
+        nomeArquivoSemExtensao = Mid(arquivo, InStrRev(arquivo, "\") + 1)
+        nomeArquivoSemExtensao = Left(nomeArquivoSemExtensao, InStrRev(nomeArquivoSemExtensao, ".") - 1)
+        novoCaminho = pastaDestino & "\" & nomeArquivoSemExtensao & ".xlsx"
+        
+        ' Salva o arquivo convertido
+        wb.SaveAs Filename:=novoCaminho, FileFormat:=xlOpenXMLWorkbook
+        wb.Close SaveChanges:=False
+        arquivosConvertidos = arquivosConvertidos + 1
+
+ProximoArquivo:
+    Next arquivo
+    
+    MsgBox "Conversão finalizada!" & vbCrLf & _
+           "Arquivos convertidos: " & arquivosConvertidos & vbCrLf & _
+           "Arquivos ignorados (vazios): " & arquivosIgnorados, vbInformation
+End Sub
+

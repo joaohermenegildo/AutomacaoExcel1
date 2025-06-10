@@ -1,0 +1,49 @@
+Sub InserirValoresColunaH_Linha1()
+
+    Dim arquivoData As Variant
+    Dim arquivosSelecionados As Variant
+    Dim wbData As Workbook, wsData As Worksheet
+    Dim wb As Workbook, ws As Worksheet
+    Dim i As Long, linha As Long, ultimaLinhaArq As Long
+
+    ' Seleciona o arquivo base (data)
+    arquivoData = Application.GetOpenFilename( _
+        FileFilter:="Arquivos Excel (*.xlsx), *.xlsx", _
+        Title:="Selecione o arquivo BASE (DATA)")
+
+    If arquivoData = False Then Exit Sub
+
+    Set wbData = Workbooks.Open(arquivoData)
+    Set wsData = wbData.Sheets(1)
+
+    ' Seleciona os arquivos cortados
+    arquivosSelecionados = Application.GetOpenFilename( _
+        FileFilter:="Arquivos Excel (*.xlsx), *.xlsx", _
+        Title:="Selecione os arquivos CORTADOS", _
+        MultiSelect:=True)
+
+    If VarType(arquivosSelecionados) = vbBoolean Then
+        MsgBox "Nenhum arquivo selecionado.", vbExclamation
+        Exit Sub
+    End If
+
+    ' Processa cada arquivo cortado
+    For i = 1 To UBound(arquivosSelecionados)
+        Set wb = Workbooks.Open(arquivosSelecionados(i))
+        Set ws = wb.Sheets(1)
+
+        ultimaLinhaArq = ws.Cells(ws.Rows.Count, "K").End(xlUp).Row
+
+        ' Copia toda a coluna H do arquivo cortado (linha 1 até ultima)
+        For linha = 1 To ultimaLinhaArq
+            wsData.Cells(linha, i + 1).Value = ws.Cells(linha, "K").Value
+        Next linha
+
+        wb.Close SaveChanges:=False
+    Next i
+
+    MsgBox "Dados inseridos a partir da linha 1!", vbInformation
+    wbData.Save
+
+End Sub
+

@@ -1,0 +1,56 @@
+Sub CortarArquivosPorData()
+
+    Dim arquivosSelecionados As Variant
+    Dim dataInicial As Date, dataFinal As Date
+    Dim wb As Workbook, ws As Worksheet
+    Dim ultimaLinha As Long
+    Dim i As Long, j As Long
+    Dim dataCelula As Variant
+
+    ' Perguntar intervalo
+    On Error GoTo Fim
+    dataInicial = CDate(InputBox("Digite a data inicial (dd/mm/aaaa):"))
+    dataFinal = CDate(InputBox("Digite a data final (dd/mm/aaaa):"))
+    On Error GoTo 0
+
+    ' Selecionar arquivos
+    arquivosSelecionados = Application.GetOpenFilename( _
+        FileFilter:="Arquivos Excel (*.xlsx), *.xlsx", _
+        Title:="Selecione os arquivos para cortar", _
+        MultiSelect:=True)
+
+    If VarType(arquivosSelecionados) = vbBoolean Then
+        MsgBox "Nenhum arquivo selecionado.", vbExclamation
+        Exit Sub
+    End If
+
+    ' Processar cada arquivo
+    For i = 1 To UBound(arquivosSelecionados)
+        Set wb = Workbooks.Open(arquivosSelecionados(i))
+        Set ws = wb.Sheets(1)
+
+        ultimaLinha = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+        ' Começa da última linha para cima para deletar corretamente
+        For j = ultimaLinha To 3 Step -1
+            dataCelula = ws.Cells(j, "A").Value
+            If IsDate(dataCelula) Then
+                If CDate(dataCelula) < dataInicial Or CDate(dataCelula) > dataFinal Then
+                    ws.Rows(j).Delete
+                End If
+            End If
+        Next j
+
+        ' Salva como novo arquivo
+        wb.SaveAs Filename:=Left(wb.FullName, InStrRev(wb.FullName, ".") - 1) & "_cortado.xlsx"
+        wb.Close SaveChanges:=False
+    Next i
+
+    MsgBox "Arquivos cortados e salvos com sucesso!", vbInformation
+    Exit Sub
+
+Fim:
+    MsgBox "Operação cancelada ou datas inválidas.", vbExclamation
+
+End Sub
+
